@@ -1,0 +1,3 @@
+[submodule "TickerScheduler"]
+	path = TickerScheduler
+	url = ./TickerScheduler
