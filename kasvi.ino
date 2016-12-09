@@ -2,16 +2,31 @@
 #include <Ticker.h>
 #include <TickerScheduler.h>
 
-int PumpPin = 2;
-uint32_t PumpInterval = 120 * 60 * 1000;
-uint32_t PumpOnTime = 60 * 1000;
+#define NUM_TIMERS 3
+#define TimerMinute 0
+//#define TimerPump1 1
+#define Void ((void)0)
+#define USELED 0
 
-TickerScheduler timer(1);
+const int PumpPin = 2;
+const uint32_t PumpIntervalMins = 120; //* 60 * 1000;
+const uint32_t PumpOnTime = 55 * 1000;
+const uint32_t MinuteInterval = 60 * 1000; //HeartbeatInterval
+uint32_t minuteCounter = 0;
 
+TickerScheduler timers(NUM_TIMERS);
+Ticker pumpOffTimer;
+
+#if USELED
 inline void ledOn(){ digitalWrite(LED_BUILTIN, LOW); } // Turn the LED on (Note that LOW is the voltage level
 inline void ledOff(){ digitalWrite(LED_BUILTIN, HIGH); } // Turn the LED off by making the voltage HIGH
+#else
+inline void ledOn(){ } // No operation
+inline void ledOff(){ }
+#endif
 inline void pumpOn(){ digitalWrite(PumpPin, LOW); } // Using inverted input relay module
 inline void pumpOff(){ digitalWrite(PumpPin, HIGH); }
+
 
 void errorBlink() {
     pinMode(LED_BUILTIN, OUTPUT);
@@ -20,45 +35,54 @@ void errorBlink() {
         ledOff(); delay(500);
     }
 }
-void runPump() {
-    Serial.print("pump_on\r\n");
 
-    ledOn(); pumpOn();
-    delay(PumpOnTime);
-    pumpOff(); ledOff();
+void pumpStop() {
+    Serial.println("pump_off");
+    pumpOff();
+    //ledOff(); timers.enable(TimerLed);
+}
+void pumpStart() {
+    Serial.println("pump_on");
 
-    Serial.print("pump_off\r\n");
+    //timers.disable(TimerLed); ledOn(); // enabled in pumpStop()
+    pumpOn();
+
+    pumpOffTimer.once_ms(PumpOnTime, pumpStop);
+}
+
+void heartbeatMinute() {
+    Serial.print("heartbeat");
+    minuteCounter++;
+    Serial.println(minuteCounter);
+    if (minuteCounter % PumpIntervalMins == 0)
+        pumpStart();
 }
 
 
 void setup() {
-    Serial.begin(115200);
-
-    delay(1000);
-    Serial.print("booting\r\n");
-    delay(1000);
-
-    pinMode(LED_BUILTIN, OUTPUT);
-    ledOff();
-
     pumpOff(); // try to ensure that pump doesn't start yet
     pinMode(PumpPin, OUTPUT);
     
 
-    if (!timer.add(0, PumpInterval, runPump, true)) {
-        Serial.println("Error: timer didn't start");
-        errorBlink();
-    }
-    timer.enableAll();
+    delay(3000); // some recovery time for serial from garbage
+    Serial.begin(115200);
+    delay(1000);
+    Serial.println("booting");
+
+#if USELED
+    pinMode(LED_BUILTIN, OUTPUT);
+#endif
+    ledOff();
+
+
+    Serial.print("scheduling... ");
+    timers.add(TimerMinute, MinuteInterval, heartbeatMinute, false) ? Void : errorBlink();
+    //timers.add(TimerPump1, PumpInterval, pumpStart, false) ? Void : errorBlink();
+    Serial.println("OK");
 }
 
 
 
 void loop() {
-    timer.update();
-    delay(10000);
-    ledOn();
-    Serial.print("heartbeat\r\n");
-    delay(100);
-    ledOff();
+    timers.update();
 }
