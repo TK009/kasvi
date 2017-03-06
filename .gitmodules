@@ -1,3 +1,9 @@
 [submodule "TickerScheduler"]
 	path = TickerScheduler
 	url = https://github.com/Toshik/TickerScheduler
+[submodule "esp8266-SNTPClock"]
+	path = esp8266-SNTPClock
+	url = https://github.com/Juppit/esp8266-SNTPClock
+[submodule "firmata"]
+	path = firmata
+	url = https://github.com/firmata/arduino

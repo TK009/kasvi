@@ -1,15 +1,19 @@
 
+#include <Arduino.h>
 #include <Ticker.h>
 #include <TickerScheduler.h>
+#include <time.h>
+#include "Config.h"
 
 #define NUM_TIMERS 3
 #define TimerMinute 0
 //#define TimerPump1 1
 #define Void ((void)0)
+#define OrElse ? Void :
 #define USELED 0
 
 const int PumpPin = 2;
-const uint32_t PumpIntervalMins = 120; //* 60 * 1000;
+const uint32_t PumpIntervalMins = 9 * 60; //* 60 * 1000;
 const uint32_t PumpOnTime = 55 * 1000;
 const uint32_t MinuteInterval = 60 * 1000; //HeartbeatInterval
 uint32_t minuteCounter = 0;
@@ -76,9 +80,18 @@ void setup() {
 
 
     Serial.print("scheduling... ");
-    timers.add(TimerMinute, MinuteInterval, heartbeatMinute, false) ? Void : errorBlink();
+    timers.add(TimerMinute, MinuteInterval, heartbeatMinute, false) OrElse errorBlink();
     //timers.add(TimerPump1, PumpInterval, pumpStart, false) ? Void : errorBlink();
     Serial.println("OK");
+
+
+    // NEW SETUP
+    // Config config;
+    // initIO();
+    // initWifi();
+    // initClock();
+    // readConfig(config) OrElse config = DefaultConfig;
+    // initScheduler(config);
 }
 
 
